@@ -100,6 +100,11 @@ Usuarios de ejemplo (seed): **Admin**, **Veterinario**, **Donante** — accesibl
 | ImpactNFT | `0xB34bB13436c69A9DcD353Bac141131F80cC4FEFA` |
 | VitalPawsCases | `0x5a8E5Ba06e6FF007d0a4c696f47374F66EeEabcF` |
 
+### Despliegue en la nube (opcional)
+
+- **Backend → Render**: New → Blueprint → este repo (usa [`render.yaml`](render.yaml)). La DB SQLite se recrea con el seed en cada deploy (plan free, disco efímero).
+- **Frontend → Vercel**: Import del repo con *Root Directory* = `frontend`, y las variables `NEXT_PUBLIC_API_URL` (URL de Render), `NEXT_PUBLIC_CHAIN_ID`, `NEXT_PUBLIC_CASES_ADDRESS`, `NEXT_PUBLIC_IMPACT_NFT_ADDRESS`.
+
 ## 6. Estado
 
 - **Etapa A — App funcional** (backend + frontend con DB): ✅ completa.

@@ -5,7 +5,7 @@ import { prisma } from "../db.js";
 export const usersRouter = Router();
 
 const createUserSchema = z.object({
-  wallet: z.string().min(3),
+  wallet: z.string().min(3).transform((w) => w.toLowerCase()),
   name: z.string().min(1),
   role: z.enum(["ADMIN", "VET", "DONANTE"]).default("DONANTE"),
 });

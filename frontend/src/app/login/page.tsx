@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/session";
 import { api, type User } from "@/lib/api";
+import { connectWallet, hasMetaMask } from "@/lib/eth";
 
 const DEMO: { label: string; wallet: string; emoji: string }[] = [
-  { label: "Admin", wallet: "vitalpaws.eth", emoji: "🛠️" },
-  { label: "Veterinario", wallet: "vet-trujillo.eth", emoji: "🩺" },
+  { label: "Admin", wallet: "0x41270b3ea88088571250e75f7c098f441bacd2c4", emoji: "🛠️" },
+  { label: "Veterinario", wallet: "0xea3e8943ac023cdc8054a1d56ad9d4611274508c", emoji: "🩺" },
   { label: "Donante", wallet: "pedro.eth", emoji: "💛" },
 ];
 
@@ -17,6 +18,9 @@ export default function LoginPage() {
   const [wallet, setWallet] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+  // Evita mismatch de hidratacion: window.ethereum solo existe en el cliente
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const connect = async (value: string) => {
     const w = value.trim().toLowerCase();
@@ -39,15 +43,51 @@ export default function LoginPage() {
     }
   };
 
+  // Conexión real con MetaMask: usa la dirección de la wallet como identidad.
+  const connectMetaMask = async () => {
+    setErr("");
+    setLoading(true);
+    try {
+      const address = await connectWallet(); // pide cuenta + asegura Sepolia
+      const user = await api.loginWallet(address); // find-or-create donante
+      setCurrent(user);
+      router.push("/dashboard");
+    } catch (e) {
+      const err = e as { code?: string | number; message?: string };
+      // Usuario canceló en MetaMask: no mostrar error, solo salir limpio.
+      if (err?.code === "ACTION_REJECTED" || err?.code === 4001) {
+        return;
+      }
+      setErr(err?.message ?? "No se pudo conectar la wallet.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="auth-wrap">
       <div className="login-card">
         <img className="login-logo" src="/logo-full.png" alt="VitalPaws" />
         <h1>Conectar cuenta</h1>
         <p className="muted">
-          Ingresa tu wallet para acceder. En esta etapa el acceso es por alias
-          (Etapa A → luego firma de wallet).
+          Conecta tu wallet real con MetaMask, o entra por alias para la demo.
         </p>
+
+        <button
+          type="button"
+          className="btn-primary"
+          style={{ width: "100%", marginBottom: 8 }}
+          disabled={loading}
+          onClick={connectMetaMask}
+        >
+          {loading
+            ? "Conectando…"
+            : mounted && !hasMetaMask()
+              ? "🦊 Instalar MetaMask"
+              : "🦊 Conectar MetaMask"}
+        </button>
+
+        <div className="login-sep"><span>o por alias (demo)</span></div>
 
         <form
           className="login-form"

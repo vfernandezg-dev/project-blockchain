@@ -21,6 +21,7 @@ export interface Donation {
   id: string;
   amountEth: number;
   txHash: string;
+  wallet?: string | null;
   createdAt: string;
   donor?: User;
   case?: Case;
@@ -49,6 +50,8 @@ export interface Case {
   goalEth: number;
   raisedEth: number;
   status: CaseStatus;
+  onchainId?: number | null;
+  closeTxHash?: string | null;
   diagnosis?: string | null;
   evidenceUrl?: string | null;
   clinic?: string | null;
@@ -79,6 +82,8 @@ async function req<T>(
 export const api = {
   // usuarios
   listUsers: () => req<User[]>("/users"),
+  loginWallet: (wallet: string, name?: string) =>
+    req<User>("/users/wallet", { method: "POST", body: { wallet, name } }),
   getUser: (id: string) =>
     req<User & { donations: Donation[]; certs: Certificate[] }>(`/users/${id}`),
 
@@ -89,16 +94,27 @@ export const api = {
     req<Case>("/cases", { method: "POST", body, actorId }),
   publish: (id: string, actorId: string) =>
     req<Case>(`/cases/${id}/publish`, { method: "POST", actorId }),
-  donate: (id: string, donorId: string, amountEth: number) =>
+  donate: (
+    id: string,
+    donorId: string,
+    amountEth: number,
+    onchain?: { txHash: string; wallet: string },
+  ) =>
     req<{ case: Case; reachedGoal: boolean }>(`/cases/${id}/donate`, {
       method: "POST",
-      body: { donorId, amountEth },
+      body: { donorId, amountEth, ...onchain },
     }),
+  linkOnchain: (id: string, onchainId: number, actorId: string) =>
+    req<Case>(`/cases/${id}/onchain`, { method: "POST", body: { onchainId }, actorId }),
   fabricate: (id: string, actorId: string) =>
     req<Case>(`/cases/${id}/fabricate`, { method: "POST", actorId }),
   install: (id: string, actorId: string) =>
     req<Case>(`/cases/${id}/install`, { method: "POST", actorId }),
-  validate: (id: string, actorId: string, body: { clinic: string; evidenceUrl?: string }) =>
+  validate: (
+    id: string,
+    actorId: string,
+    body: { clinic: string; evidenceUrl?: string; txHash?: string },
+  ) =>
     req<{ case: Case; certificatesMinted: number }>(`/cases/${id}/validate`, {
       method: "POST",
       body,

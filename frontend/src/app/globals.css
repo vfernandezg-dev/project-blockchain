@@ -266,6 +266,22 @@ a {
   gap: 8px;
   font-size: 12px;
 }
+.login-sep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 12px 0;
+}
+.login-sep::before,
+.login-sep::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
 .user-switcher {
   width: 100%;
   background: var(--bg);

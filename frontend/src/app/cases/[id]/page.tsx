@@ -6,6 +6,16 @@ import { api, type Case } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StepsTracker } from "@/components/StepsTracker";
+import { onchainEnabled, ETHERSCAN_TX } from "@/lib/contracts";
+import {
+  donarOnchain,
+  validarOnchain,
+  connectWallet,
+  crearCasoOnchain,
+  publicarOnchain,
+  fabricarOnchain,
+  instalarOnchain,
+} from "@/lib/eth";
 
 export default function CaseDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -37,6 +47,57 @@ export default function CaseDetail({ params }: { params: Promise<{ id: string }>
       setMsg({ t: "err", m: (e as Error).message });
     }
   };
+
+  // ¿Este caso opera on-chain? (contratos configurados + id on-chain vinculado)
+  const chain = onchainEnabled() && !!c.onchainId;
+
+  const doDonate = () =>
+    run(async () => {
+      if (chain) {
+        const wallet = await connectWallet();
+        const txHash = await donarOnchain(c.onchainId!, amount); // tx real MetaMask
+        await api.donate(c.id, current!.id, Number(amount), { txHash, wallet });
+      } else {
+        await api.donate(c.id, current!.id, Number(amount)); // simulado (Etapa A)
+      }
+    }, chain ? "¡Donación on-chain confirmada!" : "¡Donación registrada!");
+
+  const doValidate = () =>
+    run(async () => {
+      let txHash: string | undefined;
+      if (chain) {
+        const uri = c.evidenceUrl || `vitalpaws-case-${c.onchainId}`;
+        txHash = await validarOnchain(c.onchainId!, uri); // mintea NFTs on-chain
+      }
+      await api.validate(c.id, current!.id, { clinic, txHash });
+    }, chain ? "Validado on-chain → NFTs minteados" : "Validado → NFTs emitidos");
+
+  // Admin registra el caso en el contrato (crea + publica) y lo vincula
+  const doRegisterOnchain = () =>
+    run(async () => {
+      const vetWallet = c.vet?.wallet ?? "";
+      if (!vetWallet.startsWith("0x")) {
+        throw new Error("El veterinario del caso necesita una dirección de wallet real (0x…)");
+      }
+      await connectWallet();
+      const { id: onchainId } = await crearCasoOnchain(String(c.goalEth), vetWallet);
+      await publicarOnchain(onchainId);
+      await api.linkOnchain(c.id, onchainId, current!.id);
+      if (c.status === "CREADO") await api.publish(c.id, current!.id); // sincroniza backend
+    }, "Caso registrado y publicado on-chain");
+
+  // Admin: fabricar / instalar — on-chain + backend
+  const doFabricate = () =>
+    run(async () => {
+      if (chain) await fabricarOnchain(c.onchainId!);
+      await api.fabricate(c.id, current!.id);
+    }, chain ? "En fabricación (on-chain)" : "En fabricación");
+
+  const doInstall = () =>
+    run(async () => {
+      if (chain) await instalarOnchain(c.onchainId!);
+      await api.install(c.id, current!.id);
+    }, chain ? "Instalada (on-chain)" : "Prótesis instalada");
 
   return (
     <main className="container">
@@ -72,7 +133,22 @@ export default function CaseDetail({ params }: { params: Promise<{ id: string }>
               {c.donations.map((d) => (
                 <div key={d.id} className="donation-item">
                   <span>{d.donor?.name ?? "Anónimo"}</span>
-                  <span><strong>{d.amountEth} ETH</strong> <span className="muted">· {d.txHash.slice(0, 12)}…</span></span>
+                  <span>
+                    <strong>{d.amountEth} ETH</strong>{" "}
+                    {d.txHash.startsWith("sim-") ? (
+                      <span className="muted">· {d.txHash.slice(0, 12)}…</span>
+                    ) : (
+                      <a
+                        className="muted"
+                        href={`${ETHERSCAN_TX}${d.txHash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ color: "var(--gold-dark)" }}
+                      >
+                        · ver en Etherscan ↗
+                      </a>
+                    )}
+                  </span>
                 </div>
               ))}
             </div>
@@ -112,11 +188,8 @@ export default function CaseDetail({ params }: { params: Promise<{ id: string }>
                       <label>Monto (ETH)</label>
                       <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" step="0.01" min="0.001" />
                     </div>
-                    <button
-                      className="btn-sm gold"
-                      onClick={() => run(() => api.donate(c.id, current!.id, Number(amount)), "¡Donación registrada!")}
-                    >
-                      Donar
+                    <button className="btn-sm gold" onClick={doDonate}>
+                      {chain ? "Donar con MetaMask" : "Donar"}
                     </button>
                   </div>
                 ) : (
@@ -133,14 +206,33 @@ export default function CaseDetail({ params }: { params: Promise<{ id: string }>
             <div className="panel">
               <h3>Acciones {isAdmin ? "(Admin)" : "(Veterinario)"}</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {isAdmin && c.status === "CREADO" && (
+                {isAdmin && onchainEnabled() && !c.onchainId && (
+                  <button className="btn-sm gold" onClick={doRegisterOnchain}>
+                    Registrar caso on-chain
+                  </button>
+                )}
+                {c.onchainId && (
+                  <p className="muted" style={{ fontSize: 13 }}>
+                    ⛓️ On-chain #{c.onchainId}
+                    {c.closeTxHash && (
+                      <>
+                        {" · "}
+                        <a href={`${ETHERSCAN_TX}${c.closeTxHash}`} target="_blank" rel="noreferrer" style={{ color: "var(--gold-dark)" }}>
+                          cierre en Etherscan ↗
+                        </a>
+                      </>
+                    )}
+                  </p>
+                )}
+                {/* "Publicar caso" solo en modo simulacion; on-chain usa "Registrar caso on-chain" */}
+                {isAdmin && c.status === "CREADO" && !onchainEnabled() && (
                   <button className="btn-sm primary" onClick={() => run(() => api.publish(c.id, current!.id), "Caso publicado")}>Publicar caso</button>
                 )}
                 {isAdmin && c.status === "FINANCIADO" && (
-                  <button className="btn-sm primary" onClick={() => run(() => api.fabricate(c.id, current!.id), "En fabricación")}>Iniciar fabricación</button>
+                  <button className="btn-sm primary" onClick={doFabricate}>Iniciar fabricación</button>
                 )}
                 {isAdmin && c.status === "EN_FABRICACION" && (
-                  <button className="btn-sm primary" onClick={() => run(() => api.install(c.id, current!.id), "Prótesis instalada")}>Marcar instalada</button>
+                  <button className="btn-sm primary" onClick={doInstall}>Marcar instalada</button>
                 )}
                 {isAdmin && ["PUBLICADO", "FINANCIADO"].includes(c.status) && (
                   <button className="btn-sm ghost" onClick={() => run(() => api.cancel(c.id, current!.id), "Caso cancelado")}>Cancelar caso</button>
@@ -153,9 +245,9 @@ export default function CaseDetail({ params }: { params: Promise<{ id: string }>
                       className="btn-sm gold"
                       style={{ marginTop: 10 }}
                       disabled={!clinic}
-                      onClick={() => run(() => api.validate(c.id, current!.id, { clinic }), "Validado → NFTs emitidos")}
+                      onClick={doValidate}
                     >
-                      Validar y emitir NFTs
+                      {chain ? "Validar y mintear NFTs" : "Validar y emitir NFTs"}
                     </button>
                   </div>
                 )}

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { api, type User } from "./api";
+import { hasMetaMask } from "./eth";
 
 /**
  * Sesion de Etapa A: "actuar como" un usuario existente (admin/vet/donante).
@@ -40,6 +41,28 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(reload, []);
+
+  // La identidad sigue a la cuenta ACTIVA de MetaMask.
+  // Cambiar de cuenta en MetaMask = cambiar de usuario/rol en la app.
+  useEffect(() => {
+    if (!hasMetaMask()) return;
+    const eth = (window as Window & { ethereum?: any }).ethereum;
+
+    const applyAccount = async (accounts: string[]) => {
+      if (!accounts || accounts.length === 0) return; // no cierra la sesion alias
+      try {
+        const user = await api.loginWallet(accounts[0]);
+        setCurrentState(user);
+        localStorage.setItem("vp_user", user.id);
+      } catch {
+        /* backend no disponible */
+      }
+    };
+
+    eth.request({ method: "eth_accounts" }).then(applyAccount).catch(() => {});
+    eth.on("accountsChanged", applyAccount);
+    return () => eth.removeListener?.("accountsChanged", applyAccount);
+  }, []);
 
   const setCurrent = (u: User | null) => {
     setCurrentState(u);

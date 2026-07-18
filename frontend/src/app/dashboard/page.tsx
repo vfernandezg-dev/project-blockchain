@@ -21,7 +21,11 @@ export default function Dashboard() {
       <main className="container">
         <div className="page-head">
           <h2>Mi Panel</h2>
-          <p>Conéctate (selector arriba a la derecha) para ver tus donaciones y NFTs.</p>
+        </div>
+        <div className="empty-state">
+          <div className="icon">🔒</div>
+          <p style={{ marginBottom: 16 }}>Conéctate para ver tus donaciones y NFTs de impacto.</p>
+          <Link href="/login"><button className="btn-primary">Conectar cuenta</button></Link>
         </div>
       </main>
     );
@@ -30,9 +34,14 @@ export default function Dashboard() {
 
   return (
     <main className="container">
-      <div className="page-head">
-        <h2>Hola, {current.name}</h2>
-        <p>Rol: {current.role} · {current.wallet}</p>
+      <div className="page-head" style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <span className="avatar" style={{ width: 52, height: 52, fontSize: 22 }}>
+          {current.name.charAt(0).toUpperCase()}
+        </span>
+        <div>
+          <h2>Hola, {current.name}</h2>
+          <p>Rol: {current.role} · {current.wallet}</p>
+        </div>
       </div>
 
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))" }}>

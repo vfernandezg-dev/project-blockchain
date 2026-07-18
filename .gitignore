@@ -39,3 +39,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# TypeScript build info
+*.tsbuildinfo

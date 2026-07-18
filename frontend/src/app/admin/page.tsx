@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { api, type User } from "@/lib/api";
 import { useSession } from "@/lib/session";
 
@@ -31,7 +32,13 @@ export default function AdminPage() {
       <main className="container">
         <div className="page-head">
           <h2>Panel de Administración</h2>
-          <p>Conéctate como un usuario <strong>ADMIN</strong> para crear casos.</p>
+        </div>
+        <div className="empty-state">
+          <div className="icon">🛠️</div>
+          <p style={{ marginBottom: 16 }}>
+            Necesitas una cuenta <strong>ADMIN</strong> para crear y gestionar casos.
+          </p>
+          <Link href="/login"><button className="btn-primary">Conectar como Admin</button></Link>
         </div>
       </main>
     );

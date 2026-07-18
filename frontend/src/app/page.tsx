@@ -18,16 +18,8 @@ export default function Home() {
             <Link href="/dashboard"><button className="btn-outline">Mi Panel</button></Link>
           </div>
         </div>
-        <div
-          style={{
-            background: "var(--card)",
-            borderRadius: "var(--radius)",
-            border: "1px solid var(--border)",
-            padding: 48,
-            textAlign: "center",
-          }}
-        >
-          <div style={{ fontSize: 72 }}>🐾❤️</div>
+        <div className="hero-card">
+          <img className="hero-logo" src="/logo-full.png" alt="VitalPaws" />
           <p style={{ marginTop: 16, color: "var(--text-muted)" }}>
             Donación → fabricación 3D → prótesis instalada → NFT de impacto.
           </p>

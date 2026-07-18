@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import Link from "next/link";
 import { api, type Case } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -49,7 +50,11 @@ export default function CaseDetail({ params }: { params: Promise<{ id: string }>
 
       <div className="detail">
         <div>
-          {c.imageUrl && <img className="detail-img" src={c.imageUrl} alt={c.dogName} />}
+          {c.imageUrl ? (
+            <img className="detail-img" src={c.imageUrl} alt={c.dogName} />
+          ) : (
+            <div className="img-placeholder" style={{ height: 260, borderRadius: "var(--radius)", marginBottom: 20 }}>🐾</div>
+          )}
           <div className="panel">
             <h3>Sobre el caso</h3>
             <p className="muted">{c.description}</p>
@@ -115,7 +120,9 @@ export default function CaseDetail({ params }: { params: Promise<{ id: string }>
                     </button>
                   </div>
                 ) : (
-                  <p className="muted" style={{ marginTop: 12 }}>Conéctate como un usuario <strong>DONANTE</strong> para donar.</p>
+                  <p className="muted" style={{ marginTop: 12 }}>
+                    <Link href="/login" style={{ color: "var(--gold-dark)", fontWeight: 600 }}>Conéctate</Link> como <strong>DONANTE</strong> para donar.
+                  </p>
                 )}
               </div>
             )}

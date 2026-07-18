@@ -11,6 +11,7 @@ interface SessionCtx {
   users: User[];
   current: User | null;
   setCurrent: (u: User | null) => void;
+  logout: () => void;
   reload: () => void;
 }
 
@@ -18,6 +19,7 @@ const Ctx = createContext<SessionCtx>({
   users: [],
   current: null,
   setCurrent: () => {},
+  logout: () => {},
   reload: () => {},
 });
 
@@ -47,8 +49,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const logout = () => setCurrent(null);
+
   return (
-    <Ctx.Provider value={{ users, current, setCurrent, reload }}>{children}</Ctx.Provider>
+    <Ctx.Provider value={{ users, current, setCurrent, logout, reload }}>{children}</Ctx.Provider>
   );
 }
 

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import "./globals.css";
 import { SessionProvider } from "@/lib/session";
-import { UserSwitcher } from "@/components/UserSwitcher";
+import { Navbar } from "@/components/Navbar";
 
 export const metadata: Metadata = {
   title: "VitalPaws — Cada paso, una nueva oportunidad",
@@ -12,21 +11,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('vp_theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body>
         <SessionProvider>
-          <nav className="nav">
-            <Link href="/">
-              <strong style={{ color: "var(--navy)" }}>🐾 VITAL PAWS</strong>
-            </Link>
-            <div className="nav-links">
-              <Link href="/">Inicio</Link>
-              <Link href="/cases">Casos</Link>
-              <Link href="/dashboard">Mi Panel</Link>
-              <Link href="/admin">Admin</Link>
-              <UserSwitcher />
-            </div>
-          </nav>
+          <Navbar />
           {children}
         </SessionProvider>
       </body>

@@ -110,5 +110,11 @@ Roadmap detallado en [CONTEXTO-PROYECTO.md](CONTEXTO-PROYECTO.md).
 
 ## 7. Integrantes (Grupo 02)
 
-Fernandez Gutierrez Valentin · Leon Rojas Franco · Morales Benites Charlie · Moreno Quevedo Camila · Sanchez Chuquimango Diego · Sanchez Romero Leonardo
+- Fernandez Gutierrez Valentin 
+- Leon Rojas Franco
+- Morales Benites Charlie
+- Moreno Quevedo Camila
+- Sanchez Chuquimango Diego
+- Sanchez Romero Leonardo
+
 Docente: Ing. Luis Jose Flores Rodriguez.

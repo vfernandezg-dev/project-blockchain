@@ -38,3 +38,26 @@ usersRouter.post("/", async (req, res) => {
     res.status(409).json({ error: "wallet ya registrada" });
   }
 });
+
+// Login por wallet (MetaMask): encuentra o crea un DONANTE con esa direccion.
+const walletLoginSchema = z.object({
+  wallet: z.string().min(3),
+  name: z.string().optional(),
+});
+
+usersRouter.post("/wallet", async (req, res) => {
+  const parsed = walletLoginSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+  const wallet = parsed.data.wallet.toLowerCase();
+  let user = await prisma.user.findUnique({ where: { wallet } });
+  if (!user) {
+    const short = wallet.startsWith("0x")
+      ? `${wallet.slice(0, 6)}…${wallet.slice(-4)}`
+      : wallet;
+    user = await prisma.user.create({
+      data: { wallet, name: parsed.data.name || short, role: "DONANTE" },
+    });
+  }
+  res.json(user);
+});

@@ -52,6 +52,10 @@ model Case {
   raisedEth   Float      @default(0)
   status      CaseStatus @default(CREADO)
 
+  // On-chain (Etapa B): id numerico del caso en VitalPawsCases.sol (null = aun no registrado)
+  onchainId   Int?
+  closeTxHash String? // tx de validacion/cierre en Sepolia
+
   // Diagnostico / evidencia (hash IPFS en Etapa B; texto/URL en Etapa A)
   diagnosis    String?
   evidenceUrl  String?
@@ -74,7 +78,8 @@ model Donation {
   donor     User     @relation(fields: [donorId], references: [id])
   donorId   String
   amountEth Float
-  txHash    String // SIMULADO en Etapa A (ej. "sim-0x...")
+  txHash    String // "sim-0x..." (Etapa A) o hash real de Sepolia (Etapa B)
+  wallet    String? // direccion real del donante (Etapa B)
   createdAt DateTime @default(now())
 }
 
@@ -85,7 +90,8 @@ model Certificate {
   caseId     String
   owner      User     @relation(fields: [ownerId], references: [id])
   ownerId    String
-  tokenId    Int // SIMULADO (autoincremental logico)
+  tokenId    Int // logico (Etapa A) o tokenId real del ERC-721 (Etapa B)
   metadata   String // JSON string con los atributos del certificado
+  txHash     String? // tx de minteo en Sepolia (Etapa B)
   createdAt  DateTime @default(now())
 }

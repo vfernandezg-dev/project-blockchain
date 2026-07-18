@@ -9,12 +9,21 @@ async function main() {
   await prisma.case.deleteMany();
   await prisma.user.deleteMany();
 
-  // Usuarios (uno por rol + donantes)
+  // Cada cuenta de MetaMask del usuario = un rol (wallets reales, minusculas).
+  // Account 2 = ADMIN (owner que desplego), Account 1 = VET.
   const admin = await prisma.user.create({
-    data: { wallet: "vitalpaws.eth", name: "VitalPaws (Admin)", role: "ADMIN" },
+    data: {
+      wallet: "0x41270b3ea88088571250e75f7c098f441bacd2c4",
+      name: "VitalPaws (Admin)",
+      role: "ADMIN",
+    },
   });
   const vet = await prisma.user.create({
-    data: { wallet: "vet-trujillo.eth", name: "Dra. Ana - Centro Vet. Trujillo", role: "VET" },
+    data: {
+      wallet: "0xea3e8943ac023cdc8054a1d56ad9d4611274508c",
+      name: "Dra. Ana - Centro Vet. Trujillo",
+      role: "VET",
+    },
   });
   const pedro = await prisma.user.create({
     data: { wallet: "pedro.eth", name: "Pedro", role: "DONANTE" },
@@ -33,23 +42,13 @@ async function main() {
         "Firulais perdio movilidad en su pata trasera. Necesita una protesis de cadera impresa en 3D.",
       imageUrl: "https://placedog.net/640/420?id=12",
       material: "TPU Grado Medico",
-      goalEth: 0.1,
+      goalEth: 0.002, // meta baja para pruebas baratas en Sepolia testnet
       diagnosis: "Displasia de cadera severa. Requiere protesis personalizada.",
       status: "PUBLICADO",
       vetId: vet.id,
     },
   });
-
-  // Una donacion previa para mostrar avance
-  await prisma.donation.create({
-    data: {
-      caseId: firulais.id,
-      donorId: maria.id,
-      amountEth: 0.03,
-      txHash: "sim-0xseed0001",
-    },
-  });
-  await prisma.case.update({ where: { id: firulais.id }, data: { raisedEth: 0.03 } });
+  void maria; // (donante de ejemplo, sin donacion previa para empezar limpio en on-chain)
 
   // Caso recien creado (aun sin publicar)
   await prisma.case.create({

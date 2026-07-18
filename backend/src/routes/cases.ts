@@ -71,6 +71,9 @@ casesRouter.post("/:id/publish", requireRole("ADMIN"), async (req, res) => {
 const donateSchema = z.object({
   donorId: z.string().min(1),
   amountEth: z.number().positive(),
+  // Etapa B (opcional): datos de la tx real firmada en MetaMask
+  txHash: z.string().min(3).optional(),
+  wallet: z.string().min(3).optional(),
 });
 
 casesRouter.post("/:id/donate", async (req, res) => {
@@ -89,12 +92,20 @@ casesRouter.post("/:id/donate", async (req, res) => {
   const newRaised = Number((c.raisedEth + amount).toFixed(6));
   const reachedGoal = newRaised >= c.goalEth;
 
-  // txHash SIMULADO (Etapa A). En Etapa B viene de la tx real.
-  const txHash = `sim-0x${Math.random().toString(16).slice(2, 10)}${Date.now().toString(16)}`;
+  // Etapa B: hash real de Sepolia. Etapa A: hash simulado.
+  const txHash =
+    parsed.data.txHash ??
+    `sim-0x${Math.random().toString(16).slice(2, 10)}${Date.now().toString(16)}`;
 
   const [donation, updated] = await prisma.$transaction([
     prisma.donation.create({
-      data: { caseId: c.id, donorId: donor.id, amountEth: amount, txHash },
+      data: {
+        caseId: c.id,
+        donorId: donor.id,
+        amountEth: amount,
+        txHash,
+        wallet: parsed.data.wallet,
+      },
     }),
     prisma.case.update({
       where: { id: c.id },
@@ -103,6 +114,20 @@ casesRouter.post("/:id/donate", async (req, res) => {
   ]);
 
   res.status(201).json({ donation, case: updated, reachedGoal });
+});
+
+/* ---------------- Etapa B: vincular caso con su id on-chain ---------------- */
+
+casesRouter.post("/:id/onchain", requireRole("ADMIN"), async (req, res) => {
+  const body = z
+    .object({ onchainId: z.number().int().positive(), txHash: z.string().optional() })
+    .safeParse(req.body);
+  if (!body.success) return res.status(400).json({ error: body.error.flatten() });
+  const updated = await prisma.case.update({
+    where: { id: String(req.params.id) },
+    data: { onchainId: body.data.onchainId },
+  });
+  res.json(updated);
 });
 
 /* ---------------- Paso 6-7: fabricar / instalar (ADMIN) ---------------- */
@@ -120,6 +145,8 @@ casesRouter.post("/:id/install", requireRole("ADMIN"), async (req, res) => {
 const validateSchema = z.object({
   evidenceUrl: z.string().url().optional(),
   clinic: z.string().min(1),
+  // Etapa B (opcional): tx de cierre/minteo real en Sepolia
+  txHash: z.string().min(3).optional(),
 });
 
 casesRouter.post("/:id/validate", requireRole("VET"), async (req, res) => {
@@ -127,7 +154,7 @@ casesRouter.post("/:id/validate", requireRole("VET"), async (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
   const c = await prisma.case.findUnique({
-    where: { id: req.params.id },
+    where: { id: String(req.params.id) },
     include: { donations: true },
   });
   if (!c) return res.status(404).json({ error: "Caso no encontrado" });
@@ -158,7 +185,7 @@ casesRouter.post("/:id/validate", requireRole("VET"), async (req, res) => {
         { trait_type: "Fecha de Cierre", value: new Date().toISOString().slice(0, 10) },
       ],
     });
-    return { caseId: c.id, ownerId, tokenId: tokenId++, metadata };
+    return { caseId: c.id, ownerId, tokenId: tokenId++, metadata, txHash: parsed.data.txHash };
   });
 
   await prisma.$transaction([
@@ -169,6 +196,7 @@ casesRouter.post("/:id/validate", requireRole("VET"), async (req, res) => {
         status: "CERRADO",
         evidenceUrl: parsed.data.evidenceUrl,
         clinic: parsed.data.clinic,
+        closeTxHash: parsed.data.txHash,
       },
     }),
   ]);

@@ -84,6 +84,8 @@ export const api = {
   listUsers: () => req<User[]>("/users"),
   loginWallet: (wallet: string, name?: string) =>
     req<User>("/users/wallet", { method: "POST", body: { wallet, name } }),
+  createVet: (wallet: string, name: string) =>
+    req<User>("/users", { method: "POST", body: { wallet, name, role: "VET" } }),
   getUser: (id: string) =>
     req<User & { donations: Donation[]; certs: Certificate[] }>(`/users/${id}`),
 

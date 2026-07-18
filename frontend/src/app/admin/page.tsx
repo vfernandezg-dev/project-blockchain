@@ -11,6 +11,8 @@ export default function AdminPage() {
   const router = useRouter();
   const [vets, setVets] = useState<User[]>([]);
   const [msg, setMsg] = useState<{ t: "ok" | "err"; m: string } | null>(null);
+  const [vetForm, setVetForm] = useState({ wallet: "", name: "" });
+  const [vetMsg, setVetMsg] = useState<{ t: "ok" | "err"; m: string } | null>(null);
   const [form, setForm] = useState({
     title: "",
     dogName: "",
@@ -23,8 +25,10 @@ export default function AdminPage() {
     vetId: "",
   });
 
-  useEffect(() => {
+  const loadVets = () =>
     api.listUsers().then((u) => setVets(u.filter((x) => x.role === "VET")));
+  useEffect(() => {
+    loadVets();
   }, []);
 
   if (current?.role !== "ADMIN")
@@ -44,6 +48,24 @@ export default function AdminPage() {
     );
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const submitVet = async () => {
+    setVetMsg(null);
+    const wallet = vetForm.wallet.trim();
+    if (!/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
+      setVetMsg({ t: "err", m: "Wallet inválida (formato 0x… de 42 caracteres)" });
+      return;
+    }
+    try {
+      const vet = await api.createVet(wallet, vetForm.name.trim());
+      await loadVets();
+      setForm((f) => ({ ...f, vetId: vet.id })); // queda seleccionado para el nuevo caso
+      setVetForm({ wallet: "", name: "" });
+      setVetMsg({ t: "ok", m: `Veterinario "${vet.name}" creado.` });
+    } catch (e) {
+      setVetMsg({ t: "err", m: (e as Error).message });
+    }
+  };
 
   const submit = async () => {
     setMsg(null);
@@ -72,6 +94,33 @@ export default function AdminPage() {
       <div className="page-head">
         <h2>Crear caso (Admin)</h2>
         <p>Registra el caso con su diagnóstico y veterinario aliado. Quedará en estado <strong>CREADO</strong>.</p>
+      </div>
+
+      {/* Alta de veterinarios */}
+      <div className="form" style={{ marginBottom: 24 }}>
+        <h3 style={{ marginBottom: 4 }}>Veterinarios aliados</h3>
+        <p className="muted" style={{ marginTop: 0 }}>
+          Registra un vet por su wallet. Debe validar los casos desde esa misma cuenta de MetaMask.
+        </p>
+        {vetMsg && <div className={`alert ${vetMsg.t}`}>{vetMsg.m}</div>}
+        <div className="row" style={{ alignItems: "flex-end" }}>
+          <div style={{ flex: 1 }}>
+            <label>Nombre</label>
+            <input value={vetForm.name} onChange={(e) => setVetForm((f) => ({ ...f, name: e.target.value }))} placeholder="Dra. Ana - Centro Vet. Trujillo" />
+          </div>
+          <div style={{ flex: 2 }}>
+            <label>Wallet (0x…)</label>
+            <input value={vetForm.wallet} onChange={(e) => setVetForm((f) => ({ ...f, wallet: e.target.value }))} placeholder="0xd47A3ccD5852511BeAEA3eB2C95408444B0419A7" />
+          </div>
+          <button className="btn-sm gold" disabled={!vetForm.name || !vetForm.wallet} onClick={submitVet}>
+            Crear vet
+          </button>
+        </div>
+        {vets.length > 0 && (
+          <p className="muted" style={{ fontSize: 13 }}>
+            {vets.length} veterinario(s): {vets.map((v) => v.name).join(", ")}
+          </p>
+        )}
       </div>
 
       {msg && <div className={`alert ${msg.t}`}>{msg.m}</div>}

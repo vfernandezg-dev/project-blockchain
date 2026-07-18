@@ -97,14 +97,35 @@ export async function publicarOnchain(onchainId: number) {
   return tx.hash;
 }
 
-export async function fabricarOnchain(onchainId: number) {
+// Estado (mismo orden que el enum del contrato)
+const ESTADO = {
+  CREADO: 0,
+  PUBLICADO: 1,
+  FINANCIADO: 2,
+  EN_FABRICACION: 3,
+  INSTALADA: 4,
+  CERRADO: 5,
+  CANCELADO: 6,
+} as const;
+
+/** Lee el estado real del caso en el contrato. */
+export async function estadoOnchain(onchainId: number): Promise<number> {
+  const c = readCasesContract();
+  const caso = await c.casos(onchainId);
+  return Number(caso.estado);
+}
+
+export async function fabricarOnchain(onchainId: number): Promise<string | null> {
+  // Idempotente: si la cadena ya avanzo, no reenviar la tx (revertiria).
+  if ((await estadoOnchain(onchainId)) >= ESTADO.EN_FABRICACION) return null;
   const c = await signerContract();
   const tx = await c.fabricar(onchainId);
   await tx.wait();
   return tx.hash;
 }
 
-export async function instalarOnchain(onchainId: number) {
+export async function instalarOnchain(onchainId: number): Promise<string | null> {
+  if ((await estadoOnchain(onchainId)) >= ESTADO.INSTALADA) return null;
   const c = await signerContract();
   const tx = await c.instalar(onchainId);
   await tx.wait();

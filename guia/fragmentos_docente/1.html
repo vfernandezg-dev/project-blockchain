@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ballenita FC Token</title>
+  </head>
+  <body>
+    <h1>Ballenita FC Token</h1>
+    <p>Aplicación para interactuar con el contrato desplegado en Sepolia.</p>
+    
+	<details open>
+      <summary>Ejercicio 1: Consultar owner</summary>
+      <p>Consulta la dirección del propietario del contrato.</p>
+      <button onclick="consultarOwner()">Consultar owner</button>
+      <p id="resultadoOwner">Resultado</p>
+    </details> 
+    
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.15.0/ethers.umd.min.js"></script>
+    
+    <script>
+        const direccionContrato = "";
+		
+		const proveedor = new ethers.providers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com");
+
+        const abi = [
+            "function owner() view returns (address)"
+        ];
+
+        async function consultarOwner() {
+            
+        }
+    </script>
+
+
+  </body>
+</html>

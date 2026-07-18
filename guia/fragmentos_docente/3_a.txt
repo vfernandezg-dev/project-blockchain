@@ -1,0 +1,13 @@
+ 	if (window.ethereum == null) {
+            resultado.innerText =
+                "MetaMask no está instalado.";
+            return;
+        }
+
+        const proveedorWallet =
+            new ethers.BrowserProvider(window.ethereum);
+
+        await proveedorWallet.send(
+            "eth_requestAccounts",
+            []
+        );

@@ -1,0 +1,9 @@
+window.ethereum.on("accountsChanged", function (cuentas) {
+    const resultado = document.getElementById("resultadoWallet");
+
+    if (cuentas.length === 0) {
+        resultado.innerText = "No hay una wallet conectada.";
+    } else {
+        resultado.innerText = "Wallet conectada: " + cuentas[0];
+    }
+});

@@ -1,0 +1,177 @@
+   async function consultarMisCompras() {
+
+        const resultado = document.getElementById("resultadoEventos");
+
+        const tabla = document.getElementById("tablaEventos");
+
+        try {
+
+            resultado.innerText = "Consultando eventos...";
+            tabla.innerHTML = "";
+
+            if (window.ethereum == null) {
+                throw new Error("MetaMask no está instalado.");
+            }
+
+   
+            // Usamos el proveedor de MetaMask. No usamos el proveedor público de Allnodes.
+
+            const proveedorWallet =
+                new ethers.BrowserProvider(window.ethereum);
+
+            const cuentas =
+                await proveedorWallet.send(
+                    "eth_accounts",
+                    []
+                );
+
+            if (cuentas.length === 0) {
+                throw new Error(
+                    "Primero debes conectar MetaMask."
+                );
+            }
+
+            const cuenta = cuentas[0];   
+            
+            const contrato = new ethers.Contract(
+                direccionContrato,
+                abi,
+                proveedorWallet
+            );
+
+            // Filtra solamente los eventos donde invocador sea la wallet conectada. 
+            const filtro =
+                contrato.filters.CompraTokens(cuenta);
+
+            const bloqueActual =
+                await proveedorWallet.getBlockNumber();
+
+
+            // Buscamos en los últimos 100000 bloques.
+            const bloqueInicial =
+                Math.max(
+                    0,
+                    bloqueActual - 100000
+                );
+
+            const tamanioRango = 5000;
+
+            let eventos = [];
+
+            for (
+                let desde = bloqueInicial;
+                desde <= bloqueActual;
+                desde += tamanioRango
+            ) {
+
+                const hasta =
+                    Math.min(
+                        desde + tamanioRango - 1,
+                        bloqueActual
+                    );
+
+                resultado.innerText =
+                    "Consultando bloques "
+                    + desde
+                    + " al "
+                    + hasta
+                    + "...";
+
+                const eventosEncontrados =
+                    await contrato.queryFilter(
+                        filtro,
+                        desde,
+                        hasta
+                    );
+
+                eventos.push(
+                    ...eventosEncontrados
+                );
+            }
+
+            if (eventos.length === 0) {
+
+                resultado.innerText =
+                    "Esta wallet no tiene compras registradas.";
+
+                return;
+            }
+
+            // Eventos más recientes primero.
+            eventos.reverse();
+
+            for (const evento of eventos) {
+
+                const bloque =
+                    await proveedorWallet.getBlock(
+                        evento.blockNumber
+                    );
+
+                const fecha =
+                    new Date(
+                        Number(bloque.timestamp) * 1000
+                    );
+
+                const cantidadBFT =
+                    ethers.formatUnits(
+                        evento.args.bft,
+                        18
+                    );
+
+                const ethEnviado =
+                    ethers.formatEther(
+                        evento.args.ethEnviado
+                    );
+
+                const fila =
+                    document.createElement("tr");
+
+                fila.innerHTML = `
+                    <td>
+                        ${fecha.toLocaleString()}
+                    </td>
+
+                    <td>
+                        ${cantidadBFT}
+                    </td>
+
+                    <td>
+                        ${ethEnviado} ETH
+                    </td>
+
+                    <td>
+                        ${evento.blockNumber}
+                    </td>
+
+                    <td>
+                        <a
+                            href="https://sepolia.etherscan.io/tx/${evento.transactionHash}"
+                            target="_blank"
+                        >
+                            Ver transacción
+                        </a>
+                    </td>
+                `;
+
+                tabla.appendChild(fila);
+            }
+
+            resultado.innerText =
+                "Se encontraron "
+                + eventos.length
+                + " compras.";
+
+        } catch (error) {
+
+            console.error(
+                "Error completo:",
+                error
+            );
+
+            resultado.innerText =
+                error.shortMessage ||
+                error.reason ||
+                error.message ||
+                "Error al consultar los eventos.";
+        }
+    }

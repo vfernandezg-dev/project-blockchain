@@ -1,0 +1,82 @@
+"use client";
+
+import { createContext, useContext, useEffect, useState } from "react";
+import { api, type User } from "./api";
+import { hasMetaMask } from "./eth";
+
+/**
+ * Sesion de Etapa A: "actuar como" un usuario existente (admin/vet/donante).
+ * En la Etapa B esto se reemplaza por conexion de wallet (SIWE).
+ */
+interface SessionCtx {
+  users: User[];
+  current: User | null;
+  setCurrent: (u: User | null) => void;
+  logout: () => void;
+  reload: () => void;
+}
+
+const Ctx = createContext<SessionCtx>({
+  users: [],
+  current: null,
+  setCurrent: () => {},
+  logout: () => {},
+  reload: () => {},
+});
+
+export function SessionProvider({ children }: { children: React.ReactNode }) {
+  const [users, setUsers] = useState<User[]>([]);
+  const [current, setCurrentState] = useState<User | null>(null);
+
+  const reload = () => {
+    api
+      .listUsers()
+      .then((list) => {
+        setUsers(list);
+        const savedId = typeof window !== "undefined" ? localStorage.getItem("vp_user") : null;
+        const found = list.find((u) => u.id === savedId) ?? null;
+        setCurrentState(found);
+      })
+      .catch(() => setUsers([]));
+  };
+
+  useEffect(reload, []);
+
+  // La identidad sigue a la cuenta ACTIVA de MetaMask.
+  // Cambiar de cuenta en MetaMask = cambiar de usuario/rol en la app.
+  useEffect(() => {
+    if (!hasMetaMask()) return;
+    const eth = (window as Window & { ethereum?: any }).ethereum;
+
+    const applyAccount = async (accounts: string[]) => {
+      if (!accounts || accounts.length === 0) return; // no cierra la sesion alias
+      try {
+        const user = await api.loginWallet(accounts[0]);
+        setCurrentState(user);
+        localStorage.setItem("vp_user", user.id);
+      } catch {
+        /* backend no disponible */
+      }
+    };
+
+    eth.request({ method: "eth_accounts" }).then(applyAccount).catch(() => {});
+    eth.on("accountsChanged", applyAccount);
+    return () => eth.removeListener?.("accountsChanged", applyAccount);
+  }, []);
+
+  const setCurrent = (u: User | null) => {
+    setCurrentState(u);
+    if (typeof window !== "undefined") {
+      if (u) localStorage.setItem("vp_user", u.id);
+      else localStorage.removeItem("vp_user");
+    }
+  };
+
+  const logout = () => setCurrent(null);
+
+  return (
+    <Ctx.Provider value={{ users, current, setCurrent, logout, reload }}>{children}</Ctx.Provider>
+  );
+}
+
+export const useSession = () => useContext(Ctx);

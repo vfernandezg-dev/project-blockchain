@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+
+# Hardhat / contracts
+artifacts/
+cache/
+typechain-types/
+coverage/
+coverage.json
+
+# Base de datos local (SQLite dev)
+*.db
+*.db-journal
+
+# Turbo
+.turbo/
+
+# Env & secrets
+.env
+.env.local
+.env.*.local
+*.key
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# TypeScript build info
+*.tsbuildinfo

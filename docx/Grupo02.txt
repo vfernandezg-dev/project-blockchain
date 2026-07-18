@@ -1,0 +1,57 @@
+Describen arquitectura compleja. Difícil de implementar. Reducir Alcance.
+
+- Solo contemplar escenario de donación por Flujo Cripto.
+- No implementar la lógica de la ICO, dejarlo especificado como una segunda etapa.
+
+
+Falta mejorar la descripción del escenario real.
+Ejemplo:
+
+PASO 1: Como se hace la preparación del caso ? Lo solicita una persona cualquiera? Esa información queda grabada en la BC.
+
+Paso 2: El diagnostico veterinario y modelo de protesis... se guarda en la BC? Es la misma veterinaria quién las hace?
+
+Paso 3: Publicación del CASO en la web de Paws
+
+Paso 4: Donación: Aquí les dejo un ejemplo para que ustedes desarrollen de igual manera los pasos previos
+
+
+Pedro ingresa a VitalPaws y observa una lista de casos veterinarios. Selecciona el caso "Prótesis de cadera para Firulais", revisa las fotografías, el monto requerido y el avance de la recaudación. Luego conecta su billetera y dona 0.03 ETH. La transacción queda registrada en blockchain y el aplicativo actualiza el monto recaudado.
+
+A partir de aquí, ¿qué sucede?
+
+¿Pedro recibe tokens $PAWS como recompensa por su donación y puede votar o recibir descuentos en veterinarias asociadas?
+
+
+Una vez instalada la prótesis, ¿qué NFT recibe Pedro?
+¿Qué información contiene ese NFT?
+¿Qué utilidad tiene para el donante además de ser un certificado digital?
+
+
+Paso 5: Cuando se alcance la recaudación de un caso. Se emite NFT ? para que sirve ese NFT, detallar mejor.
+
+
+Paso 6: Fabricación... nuevos actores ?
+
+Paso 7: Instalación de la prótesis. Como elegir que veterinaria lo hace o está relacionada con el paso 2
+
+Paso 8: La validación, subir las fotografias, etc... ¿Cómo se valida que la prótesis fabricada cumple con la calidad y especificaciones requeridas?
+
+Paso 9: Cierre: Se emite NFT ?
+
+TODOS ESTOS PASOS REEMPLAZAN: Fase 2.3: Validación y Certificación (Minting del NFT de Impacto), ya que no se conectan los puntos.
+
+
+
+
+
+SOBRE ICO:
+Falta definir también la descripción del escenario real de como actúan sus otros actores en el caso del ICO:
+¿La distribución entre tesorería, liquidez, marketing y vesting ocurre desde la primera donación o solamente cuando finaliza la campaña de financiamiento del caso? ¿Cómo garantizan que exista liquidez suficiente para fabricar la prótesis antes de inmovilizar parte de los fondos?
+Por lo que sugiero abandonar todo ese flujo en su implementación porque incrementa la dificultad, en ese sentido deben ajustar.
+
+
+
+
+Volver una revisión de participantes
+Determinar su mapa de confianza y desconfianza según las diapositivas mostradas.

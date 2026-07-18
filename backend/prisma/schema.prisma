@@ -1,0 +1,97 @@
+// VitalPaws — esquema de datos (Etapa A: app funcional sin blockchain).
+// Los campos txHash / tokenId se SIMULAN ahora y se sustituyen por reales en la Etapa B.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Roles del ecosistema (Seccion 5.1 del CONTEXTO)
+enum Role {
+  ADMIN // VitalPaws: crea/publica casos, opera fabricacion
+  VET // Veterinario aliado: diagnostica, instala, valida
+  DONANTE // Aporta a los casos
+}
+
+// Estados del caso (Seccion 5.2 — maquina de estados)
+enum CaseStatus {
+  CREADO
+  PUBLICADO
+  FINANCIADO
+  EN_FABRICACION
+  INSTALADA
+  CERRADO
+  CANCELADO
+}
+
+model User {
+  id        String   @id @default(cuid())
+  wallet    String   @unique // identificador (direccion o alias en Etapa A)
+  name      String
+  role      Role     @default(DONANTE)
+  createdAt DateTime @default(now())
+
+  casesAsVet Case[]        @relation("VetCases")
+  donations  Donation[]
+  certs      Certificate[]
+}
+
+model Case {
+  id          String     @id @default(cuid())
+  title       String // ej. "Protesis de cadera para Firulais"
+  dogName     String
+  shelter     String // refugio/solicitante
+  description String
+  imageUrl    String? // foto (URL/off-chain)
+  material    String     @default("TPU Grado Medico")
+  goalEth     Float // meta en ETH
+  raisedEth   Float      @default(0)
+  status      CaseStatus @default(CREADO)
+
+  // On-chain (Etapa B): id numerico del caso en VitalPawsCases.sol (null = aun no registrado)
+  onchainId   Int?
+  closeTxHash String? // tx de validacion/cierre en Sepolia
+
+  // Diagnostico / evidencia (hash IPFS en Etapa B; texto/URL en Etapa A)
+  diagnosis    String?
+  evidenceUrl  String?
+  clinic       String? // clinica validadora
+
+  vet     User?   @relation("VetCases", fields: [vetId], references: [id])
+  vetId   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  donations Donation[]
+  certs     Certificate[]
+}
+
+model Donation {
+  id        String   @id @default(cuid())
+  case      Case     @relation(fields: [caseId], references: [id])
+  caseId    String
+  donor     User     @relation(fields: [donorId], references: [id])
+  donorId   String
+  amountEth Float
+  txHash    String // "sim-0x..." (Etapa A) o hash real de Sepolia (Etapa B)
+  wallet    String? // direccion real del donante (Etapa B)
+  createdAt DateTime @default(now())
+}
+
+// NFT de Impacto (Seccion 5.3). tokenId simulado en Etapa A.
+model Certificate {
+  id         String   @id @default(cuid())
+  case       Case     @relation(fields: [caseId], references: [id])
+  caseId     String
+  owner      User     @relation(fields: [ownerId], references: [id])
+  ownerId    String
+  tokenId    Int // logico (Etapa A) o tokenId real del ERC-721 (Etapa B)
+  metadata   String // JSON string con los atributos del certificado
+  txHash     String? // tx de minteo en Sepolia (Etapa B)
+  createdAt  DateTime @default(now())
+}

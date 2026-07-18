@@ -1,0 +1,20 @@
+# Blueprint de Render — despliega el backend (API Express + Prisma/SQLite).
+# En https://dashboard.render.com → New → Blueprint → seleccionar este repo.
+#
+# Nota: el plan free usa disco efímero — la base SQLite se recrea (db push + seed)
+# en cada deploy/reinicio. Suficiente para el piloto del curso; las donaciones
+# reales viven on-chain en Sepolia y no se pierden.
+services:
+  - type: web
+    name: vitalpaws-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm i -g pnpm@11 && pnpm install --prod=false && pnpm run db:generate && pnpm run build
+    startCommand: pnpm exec prisma db push --accept-data-loss && pnpm run db:seed && pnpm start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        value: "file:./dev.db"
+      - key: NODE_VERSION
+        value: "22"

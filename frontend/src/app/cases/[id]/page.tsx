@@ -182,7 +182,15 @@ export default function CaseDetail({ params }: { params: Promise<{ id: string }>
             {/* Donar (rol DONANTE, caso PUBLICADO) */}
             {c.status === "PUBLICADO" && (
               <div style={{ marginTop: 16 }}>
-                {isDonor ? (
+                {onchainEnabled() && !c.onchainId ? (
+                  // On-chain activo pero el caso aún no está en el contrato:
+                  // donar aquí crearía una donación off-chain que desincroniza
+                  // el estado y hace revertir fabricar/validar. Se bloquea.
+                  <p className="muted" style={{ marginTop: 12 }}>
+                    ⛓️ Este caso todavía no está registrado on-chain. El
+                    administrador debe registrarlo antes de poder donar.
+                  </p>
+                ) : isDonor ? (
                   <div className="row" style={{ alignItems: "flex-end" }}>
                     <div>
                       <label>Monto (ETH)</label>
@@ -253,6 +261,13 @@ export default function CaseDetail({ params }: { params: Promise<{ id: string }>
                 )}
                 {isAdmin && !["CREADO", "FINANCIADO", "EN_FABRICACION", "PUBLICADO"].includes(c.status) && (
                   <p className="muted">Sin acciones de admin en este estado.</p>
+                )}
+                {isCaseVet && c.status !== "INSTALADA" && (
+                  <p className="muted">
+                    {c.status === "CERRADO"
+                      ? "Caso validado. NFTs de impacto ya emitidos."
+                      : "Podrás validar y mintear los NFT cuando la prótesis esté instalada."}
+                  </p>
                 )}
               </div>
             </div>

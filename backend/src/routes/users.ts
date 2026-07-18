@@ -39,6 +39,31 @@ usersRouter.post("/", async (req, res) => {
   }
 });
 
+// Alta / promocion de veterinario (idempotente): si la wallet ya existe
+// (p.ej. entro antes como DONANTE), la promueve a VET en vez de fallar 409.
+const vetSchema = z.object({
+  wallet: z.string().min(3).transform((w) => w.toLowerCase()),
+  name: z.string().min(1),
+});
+
+usersRouter.post("/vet", async (req, res) => {
+  const parsed = vetSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  const { wallet, name } = parsed.data;
+
+  const existing = await prisma.user.findUnique({ where: { wallet } });
+  if (existing?.role === "ADMIN") {
+    return res.status(409).json({ error: "Esa wallet es ADMIN; no se puede convertir en VET" });
+  }
+
+  const user = await prisma.user.upsert({
+    where: { wallet },
+    update: { role: "VET", name },
+    create: { wallet, name, role: "VET" },
+  });
+  res.status(201).json(user);
+});
+
 // Login por wallet (MetaMask): encuentra o crea un DONANTE con esa direccion.
 const walletLoginSchema = z.object({
   wallet: z.string().min(3),

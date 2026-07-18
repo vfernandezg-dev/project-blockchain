@@ -262,7 +262,7 @@ Foco QA/auditoría en Testnet: **reentrancy, concurrencia, soft locks** en lógi
 | Capa | Tecnología | Por qué |
 |------|-----------|---------|
 | **Frontend** | **Next.js 14 (App Router) + TypeScript + TailwindCSS + shadcn/ui** | Lo pedía el whitepaper; SSR para SEO de casos, UI rápida. |
-| **Wallet / Web3** | **wagmi + viem + RainbowKit** | Estándar actual para conectar MetaMask, leer/escribir contratos, tipado. |
+| **Wallet / Web3** | **ethers.js v6 + MetaMask** | Mismo stack que la guía del profesor (`BrowserProvider`, `queryFilter`). Se descartó wagmi/viem para alinear con el curso. |
 | **Backend** | **Node.js + Express + TypeScript** | Thin API; simple para un equipo de 6. (Alternativa: NestJS si quieren más estructura.) |
 | **ORM / DB** | **Prisma + PostgreSQL** (o SQLite en dev) | Índice de casos y donaciones; migraciones claras. |
 | **Indexer** | Worker con **viem `watchEvent`** (o Ponder) | Escucha eventos del contrato y actualiza la DB → listados rápidos sin golpear RPC. |
@@ -368,13 +368,16 @@ El mockup **no cubre el flujo real recortado** (Sección 5). Falta construir:
 | ✅ 3 | **Frontend funcional** | Lista de casos, ficha `/cases/:id` con **donar**, dashboard donante, panel admin (crear caso), panel vet (validar). Cableado al backend. |
 | ✅ 4 | **App end-to-end** | Caso completo crear → donar → financiar → fabricar → instalar → validar → certificado. Verificado en navegador (Playwright). |
 
-### Etapa B — Integración blockchain (después)
+### Etapa B — Integración blockchain (estilo guía del profesor)
+
+Stack alineado a la guía del curso: **Remix IDE + OpenZeppelin v5 + ethers.js v6 + MetaMask + Sepolia** (no wagmi/viem, no Hardhat-deploy). Alcance **híbrido**: on-chain = donación ETH + mint NFT; backend = contenido del caso y estados. Identidad **MetaMask híbrido** (wallet real para donar/validar; selector de roles para demo).
 
 | Fase | Entregable | Detalle |
 |------|-----------|---------|
-| 🔲 5 | **Contratos Solidity** | `Cases.sol` + `ImpactNFT.sol` (ERC-721). Tests Hardhat. Deploy a Sepolia. |
-| 🔲 6 | **Wallet + donación on-chain** | wagmi/viem/RainbowKit. Reemplazar donación simulada por tx real wallet→contrato. |
-| 🔲 7 | **NFT + IPFS + indexer** | Mint real al cierre, evidencia/metadatos en IPFS, indexer de eventos, auth SIWE. |
+| ✅ 5 | **Contratos Solidity** | `ImpactNFT.sol` (ERC-721 OZ v5) + `VitalPawsCases.sol` (donar payable, validar→mint, ciclo, refund/retiro). Compilan OK. Deploy en Remix → pendiente (usuario, con MetaMask+faucet). |
+| ✅ 6 | **Wallet + donación on-chain** | ethers v6 + MetaMask (`frontend/src/lib/eth.ts`). Donar/validar como tx reales, con fallback a simulación si no hay contrato. Enlaces a Etherscan. |
+| 🟡 7 | **NFT + registro real** | Mint real al validar (contrato→ImpactNFT). Backend guarda `txHash`/`wallet`/`closeTxHash` reales. **Pendiente:** IPFS para metadatos/evidencia e indexer de eventos (`queryFilter`). |
+| ⏸️ 8 | **SIWE** | Login por firma de wallet (reemplazo total del selector). Escalable, no urgente. |
 | ⏸️ 2ª etapa | ICO / Tokenomics / DAO / $PAWS | Documentado, no implementado en el piloto. |
 
-> El `txHash` y el "mint" del certificado se **simulan** en la Etapa A (campos en la DB) y se **sustituyen** por los reales en la Etapa B, sin rehacer la UI.
+> El `txHash`/`tokenId` se **simulan** cuando no hay contrato desplegado, y pasan a **reales** automáticamente cuando el caso tiene `onchainId` y los contratos están en `.env` — misma UI. Deploy: ver `backend/contracts/README.md`.
